@@ -1,0 +1,37 @@
+name: 'PushS3PreSignAction'
+description: 'Push file to S3 & create cloudfront presign-url'
+inputs:
+  aws-region:
+    description: 'Aws region'
+    default: "eu-central-1"
+  aws-role:
+    description: 'Aws role to apply changes'
+    required: true
+  file:
+    description: ''
+    required: true
+  destination:
+    description: ''
+    required: true
+  s3-bucket-name:
+    description: ''
+    required: true
+  distribution:
+    description: ''
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    # Configure aws credentials
+    - name: Configure AWS credentials for security
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-region: ${{ inputs.aws-region}}
+        role-to-assume: ${{ inputs.aws-role }}
+        role-session-name: OIDCSession
+    # Upload files to s3
+    - name: Upload file to s3
+      shell: bash
+      run: |
+        set -e
+        aws s3 cp ${{ inputs.file }} s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
