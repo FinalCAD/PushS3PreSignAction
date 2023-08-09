@@ -44,12 +44,10 @@ runs:
         set -e
         files=$(echo "$FILES" | tr "," "\n")
         for file in $files; do
-          echo "$file"
           if [ -f "$file" ]; then
-
-            aws s3 cp $file s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
+            name="$(basename -- $file)"
+            aws s3 cp $file s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}}/$name
           else
-            echo "::error file=$file,line=1::File is missing"
             exit 1
           fi
         done
@@ -59,7 +57,7 @@ runs:
         FILES: ${{ inputs.files-list }}
       run: |
         set -e
-        files=$(echo $FILES | tr "," "\n")
+        files=$(echo "$FILES" | tr "," "\n")
         echo "Presign Url for artefact" >> $GITHUB_STEP_SUMMARY
         echo "${{ inputs.private-key }}" > private_key.pem
         for file in $files; do
