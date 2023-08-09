@@ -7,8 +7,8 @@ inputs:
   aws-role:
     description: 'Aws role to apply changes'
     required: true
-  file:
-    description: ''
+  files-list:
+    description: 'Comma separated list of file to upload'
     required: true
   destination:
     description: ''
@@ -17,6 +17,12 @@ inputs:
     description: ''
     required: true
   distribution:
+    description: ''
+    required: true
+  key-pair-id:
+    description: ''
+    required: true
+  private-key:
     description: ''
     required: true
 runs:
@@ -32,10 +38,31 @@ runs:
     # Upload files to s3
     - name: Upload file to s3
       shell: bash
+      env:
+        FILES: ${{ inputs.files-list }}
       run: |
         set -e
-        if [ -e ${{ inputs.file }} ]; then
-          aws s3 cp ${{ inputs.file }} s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
-        else
-          exit 1
-        fi
+        files=$(echo $FILES | tr "," "\n")
+        for file in $files; do
+          if [ -f $file ]; then
+            aws s3 cp $file s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
+          else
+            echo "::error file=$file,line=1::File is missing"
+            exit 1
+          fi
+        done
+    - name: Create presign cloudfront
+      shell: bash
+      env:
+        FILES: ${{ inputs.files-list }}
+      run: |
+        set -e
+        files=$(echo $FILES | tr "," "\n")
+        echo "Presign Url for artefact" >> $GITHUB_STEP_SUMMARY
+        echo "${{ inputs.private-key }}" > private_key.pem
+        for file in $files; do
+          name="$(basename -- $file)"
+          echo "File ${name}" >> $GITHUB_STEP_SUMMARY
+          url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than 2023-12-12)
+          echo "${url}" >> $GITHUB_STEP_SUMMARY
+        done
