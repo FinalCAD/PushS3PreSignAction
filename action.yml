@@ -42,9 +42,11 @@ runs:
         FILES: ${{ inputs.files-list }}
       run: |
         set -e
-        files=$(echo $FILES | tr "," "\n")
+        files=$(echo "$FILES" | tr "," "\n")
         for file in $files; do
-          if [ -f $file ]; then
+          echo "$file"
+          if [ -f "$file" ]; then
+
             aws s3 cp $file s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
           else
             echo "::error file=$file,line=1::File is missing"
