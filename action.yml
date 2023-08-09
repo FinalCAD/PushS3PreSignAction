@@ -34,4 +34,8 @@ runs:
       shell: bash
       run: |
         set -e
-        aws s3 cp ${{ inputs.file }} s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
+        if [ -e ${{ inputs.file }} ]; then
+          aws s3 cp ${{ inputs.file }} s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
+        else
+          exit 1
+        fi
