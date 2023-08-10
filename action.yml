@@ -62,8 +62,6 @@ runs:
         echo "${{ inputs.private-key }}" > private_key.pem
         for file in $files; do
           name="$(basename -- $file)"
-          echo "File: ${name}" >> $GITHUB_STEP_SUMMARY
           url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than 2023-12-12)
-          echo "${url}" >> $GITHUB_STEP_SUMMARY
-          echo "--------------" >> $GITHUB_STEP_SUMMARY
+          echo "File: [${name}](${url})" >> $GITHUB_STEP_SUMMARY
         done
