@@ -11,19 +11,19 @@ inputs:
     description: 'Comma separated list of file to upload'
     required: true
   destination:
-    description: ''
+    description: 'Path to S3 destination'
     required: true
   s3-bucket-name:
-    description: ''
+    description: 'S3 bucket name'
     required: true
   distribution:
-    description: ''
+    description: 'Cloudfront dns'
     required: true
   key-pair-id:
-    description: ''
+    description: 'Cloudfront public key pair id'
     required: true
   private-key:
-    description: ''
+    description: 'Cloudfront presign private key'
     required: true
 runs:
   using: 'composite'
@@ -62,7 +62,8 @@ runs:
         echo "${{ inputs.private-key }}" > private_key.pem
         for file in $files; do
           name="$(basename -- $file)"
-          echo "File ${name}" >> $GITHUB_STEP_SUMMARY
+          echo "File: ${name}" >> $GITHUB_STEP_SUMMARY
           url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than 2023-12-12)
           echo "${url}" >> $GITHUB_STEP_SUMMARY
+          echo "--------------" >> $GITHUB_STEP_SUMMARY
         done
