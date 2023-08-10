@@ -58,7 +58,6 @@ runs:
       run: |
         set -e
         files=$(echo "$FILES" | tr "," "\n")
-        echo "Presign Url for artefact" >> $GITHUB_STEP_SUMMARY
         echo "${{ inputs.private-key }}" > private_key.pem
         for file in $files; do
           name="$(basename -- $file)"
