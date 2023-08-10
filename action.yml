@@ -25,6 +25,9 @@ inputs:
   private-key:
     description: 'Cloudfront presign private key'
     required: true
+  date-less-than:
+    description: 'Expiration date for presigned url YYYY-MM-DD, default today + 1 month'
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -55,12 +58,16 @@ runs:
       shell: bash
       env:
         FILES: ${{ inputs.files-list }}
+        DATE: ${{ inputs.date-less-than }}
       run: |
         set -e
         files=$(echo "$FILES" | tr "," "\n")
         echo "${{ inputs.private-key }}" > private_key.pem
+        if [ -z "${DATE}" ]; then
+          DATE=$(date -d "+1 months" +%Y-%m-%d)
+        fi
         for file in $files; do
           name="$(basename -- $file)"
-          url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than 2023-12-12)
+          url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than $DATE)
           echo "File: [${name}](${url})" >> $GITHUB_STEP_SUMMARY
         done
