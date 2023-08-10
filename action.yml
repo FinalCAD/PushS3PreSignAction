@@ -7,17 +7,23 @@ inputs:
   aws-role:
     description: 'Aws role to apply changes'
     required: true
-  file:
-    description: ''
+  files-list:
+    description: 'Comma separated list of file to upload'
     required: true
   destination:
-    description: ''
+    description: 'Path to S3 destination'
     required: true
   s3-bucket-name:
-    description: ''
+    description: 'S3 bucket name'
     required: true
   distribution:
-    description: ''
+    description: 'Cloudfront dns'
+    required: true
+  key-pair-id:
+    description: 'Cloudfront public key pair id'
+    required: true
+  private-key:
+    description: 'Cloudfront presign private key'
     required: true
 runs:
   using: 'composite'
@@ -32,6 +38,29 @@ runs:
     # Upload files to s3
     - name: Upload file to s3
       shell: bash
+      env:
+        FILES: ${{ inputs.files-list }}
       run: |
         set -e
-        aws s3 cp ${{ inputs.file }} s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}} --recursive
+        files=$(echo "$FILES" | tr "," "\n")
+        for file in $files; do
+          if [ -f "$file" ]; then
+            name="$(basename -- $file)"
+            aws s3 cp $file s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}}/$name
+          else
+            exit 1
+          fi
+        done
+    - name: Create presign cloudfront
+      shell: bash
+      env:
+        FILES: ${{ inputs.files-list }}
+      run: |
+        set -e
+        files=$(echo "$FILES" | tr "," "\n")
+        echo "${{ inputs.private-key }}" > private_key.pem
+        for file in $files; do
+          name="$(basename -- $file)"
+          url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than 2023-12-12)
+          echo "File: [${name}](${url})" >> $GITHUB_STEP_SUMMARY
+        done
