@@ -3,71 +3,36 @@ description: 'Push file to S3 & create cloudfront presign-url'
 inputs:
   aws-region:
     description: 'Aws region'
-    default: "eu-central-1"
+    default: ''
   aws-role:
     description: 'Aws role to apply changes'
-    required: true
+    default: ''
   files-list:
     description: 'Comma separated list of file to upload'
-    required: true
+    default: ''
   destination:
     description: 'Path to S3 destination'
-    required: true
+    default: ''
   s3-bucket-name:
     description: 'S3 bucket name'
-    required: true
+    default: ''
   distribution:
     description: 'Cloudfront dns'
-    required: true
+    default: ''
   key-pair-id:
     description: 'Cloudfront public key pair id'
-    required: true
+    default: ''
   private-key:
     description: 'Cloudfront presign private key'
-    required: true
+    default: ''
   date-less-than:
     description: 'Expiration date for presigned url YYYY-MM-DD, default today + 1 month'
     default: ''
 runs:
   using: 'composite'
   steps:
-    # Configure aws credentials
-    - name: Configure AWS credentials for security
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-region: ${{ inputs.aws-region}}
-        role-to-assume: ${{ inputs.aws-role }}
-        role-session-name: OIDCSession
-    # Upload files to s3
-    - name: Upload file to s3
+    - name: Deprecated FinalCAD/PushS3PreSignAction
       shell: bash
-      env:
-        FILES: ${{ inputs.files-list }}
       run: |
-        set -e
-        files=$(echo "$FILES" | tr "," "\n")
-        for file in $files; do
-          if [ -f "$file" ]; then
-            name="$(basename -- $file)"
-            aws s3 cp $file s3://${{ inputs.s3-bucket-name }}/${{ inputs.destination}}/$name
-          else
-            exit 1
-          fi
-        done
-    - name: Create presign cloudfront
-      shell: bash
-      env:
-        FILES: ${{ inputs.files-list }}
-        DATE: ${{ inputs.date-less-than }}
-      run: |
-        set -e
-        files=$(echo "$FILES" | tr "," "\n")
-        echo "${{ inputs.private-key }}" > private_key.pem
-        if [ -z "${DATE}" ]; then
-          DATE=$(date -d "+1 months" +%Y-%m-%d)
-        fi
-        for file in $files; do
-          name="$(basename -- $file)"
-          url=$(aws cloudfront sign --url https://${{ inputs.distribution }}/${{ inputs.destination }}/$name --key-pair-id ${{ inputs.key-pair-id }} --private-key file://private_key.pem --date-less-than $DATE)
-          echo "File: [${name}](${url})" >> $GITHUB_STEP_SUMMARY
-        done
+        echo "::error title=Deprecated FinalCAD/PushS3PreSignAction::The action FinalCAD/PushS3PreSignAction is deprecated. Don't use it!"
+        exit 1
